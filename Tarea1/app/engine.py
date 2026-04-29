@@ -1,3 +1,4 @@
+import os
 import redis
 import json
 
@@ -6,104 +7,55 @@ from queries import (
     q2_area,
     q3_density,
     q4_compare,
-    q5_confidence_dist
+    q5_confidence_dist,
 )
 
+# Conexión correcta a Redis dentro de Docker
 r = redis.Redis(
-    host="localhost",   # o cache en docker
+    host=os.getenv("REDIS_HOST", "cache"),
     port=6379,
     decode_responses=True
 )
 
 
-hits=0
-misses=0
+r.set("prueba","hola",ex=60)
+print(r.get("prueba"))
 
 
-def procesar(c):
+print("Esperando consultas...")
 
-    if c["tipo"]=="Q1":
-        return q1_count(
-            c["zona"],
-            c["confidence_min"]
-        )
+while True:
+    _, raw = r.blpop("cola:consultas")
+    query = json.loads(raw)
 
-    elif c["tipo"]=="Q2":
-        return q2_area(
-            c["zona"],
-            c["confidence_min"]
-        )
+    qtype = query["type"]
+    params = query["params"]
 
-    elif c["tipo"]=="Q3":
-        return q3_density(
-            c["zona"],
-            c["confidence_min"]
-        )
+    cache_key = query["cache_key"]
 
-    elif c["tipo"]=="Q4":
-        return q4_compare(
-            c["zona"],
-            c["zona_b"],
-            c["confidence_min"]
-        )
+    # Revisar caché
+    cached = r.get(cache_key)
+    if cached:
+        print(f"[CACHE HIT] {cache_key}")
+        continue
 
-    elif c["tipo"]=="Q5":
-        return q5_confidence_dist(
-            c["zona"],
-            c["bins"]
-        )
+    print(f"[CACHE MISS] {cache_key}")
 
+    # Ejecutar consulta
+    if qtype == "Q1":
+        result = q1_count(**params)
+    elif qtype == "Q2":
+        result = q2_area(**params)
+    elif qtype == "Q3":
+        result = q3_density(**params)
+    elif qtype == "Q4":
+        result = q4_compare(**params)
+    elif qtype == "Q5":
+        result = q5_confidence_dist(**params)
+    else:
+        result = {"error": "Unknown query type"}
 
-def main():
+    # Guardar en caché (con TTL si quieres después)
+    r.set(cache_key, json.dumps(result))
 
-    global hits,misses
-
-    print("Esperando consultas...")
-
-    while True:
-
-        msg = r.blpop(
-            "cola:consultas"
-        )
-
-        consulta = json.loads(
-            msg[1]
-        )
-
-        cache_key = json.dumps(
-            consulta,
-            sort_keys=True
-        )
-
-        cached = r.get(cache_key)
-
-        if cached:
-
-            hits +=1
-
-            print("HIT", consulta)
-
-        else:
-
-            misses +=1
-
-            print("MISS", consulta)
-
-            resultado = procesar(
-                consulta
-            )
-
-            r.set(
-                cache_key,
-                json.dumps(resultado),
-                ex=60   # TTL ajustado a 60 segundos
-            )
-
-        print(
-            "Hit rate:",
-            hits/(hits+misses)
-        )
-
-
-if __name__=="__main__":
-    main()
+    print(f"Resultado guardado en cache: {cache_key}")

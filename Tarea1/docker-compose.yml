@@ -7,7 +7,7 @@ services:
     command:
       - redis-server
       - --maxmemory
-      - 50mb
+      - 50mb # Memoria cache
       - --maxmemory-policy
       - allkeys-lru # Politica de remocion LRU
 
@@ -22,3 +22,4 @@ services:
 
     environment:
       REDIS_HOST: cache
+      TRAFFIC_INTERVAL: 0.01 # Tiempo entre peticiones

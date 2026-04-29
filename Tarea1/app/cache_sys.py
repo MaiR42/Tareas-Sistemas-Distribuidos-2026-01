@@ -2,7 +2,7 @@ cache = {}
 
 hits = 0 # Consultas que estan en cache
 misses = 0 # Consultas que no estan en cache => buscar en backend
-
+hit_rate = 0
 
 def cached_query(query_key, query_function, *args):
     global hits, misses
@@ -21,9 +21,13 @@ def cached_query(query_key, query_function, *args):
 
     return result
 
-def show_hit_rate():
+
+def show_metricas():
+    print("Hits: ", hits)
+    print("Misses: ", misses)
+
     if (hits + misses) == 0:
         print("Error al calcular Hit Rate")
     else:
-        hit_rate = hits/(hits+misses) # hits/total
-        print("Hit Rate: ", hit_rate)
+            hit_rate = hits/(hits+misses) # hits/total
+            print("Hit Rate: ", hit_rate)

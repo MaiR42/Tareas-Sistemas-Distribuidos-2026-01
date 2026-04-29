@@ -45,7 +45,7 @@ def q1_count(zone_id, confidence_min=0.0):
 def q2_area(zone_id, confidence_min = 0.0):
     areas = [r["area_in_meters"] for _, r in data[zone_id].iterrows() if r["confidence"] >= confidence_min] # Cambie el formato del for para usar r["confidence"]
     return {
-        "avg_area": mean(areas), "total_area": sum(areas), "n": len(areas)
+        "avg_area": mean(areas), "total_area": sum(areas), "n": len(areas) # Quizas limitar decimales de "avg_areas" y "total_area" 
     }
 
 # Q3
@@ -65,15 +65,25 @@ def q3_density(zone_id, confidence_min=0.0):
     area_km2 = zone_area_km2[zone_id] # rea precalculada de la bbox
     return count / area_km2
 
+# Q4
+
+def q4_compare (zone_a ,zone_b ,confidence_min =0.0):
+    da = q3_density ( zone_a , confidence_min )
+    db = q3_density ( zone_b , confidence_min )
+    return { "zone_a" : da , "zone_b" : db , "winner" : zone_a if da > db else zone_b }
+
+# Q5
+
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 def main():
     print("Hoal mundo")
     print("========= Consulas =========")
 
-    print(q1_count("Z1"))
-    print(q1_count("Z2"))
-
+    print(q2_area("Z1"))
+    print(q3_density("Z1"))
+    print(q4_compare("Z1", "Z2"))
 
 
 

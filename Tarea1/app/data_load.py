@@ -3,8 +3,7 @@ import pandas as pd
 # # # Cargar dataset
 
 df = pd.read_csv(
-    "./data/967_buildings.csv.gz",
-    usecols=["latitude","longitude","area_in_meters","confidence"] # Por el momento solo importar eso
+    "data/967_buildings.csv.gz", usecols=["latitude","longitude","area_in_meters","confidence"], compression='gzip',  # Por el momento solo importar eso
 )
 
 # # # Informacion de ubicacion por zona

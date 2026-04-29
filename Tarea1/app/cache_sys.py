@@ -1,3 +1,6 @@
+from collections import OrderedDict # Para facilitar hacer la politica LRU
+import time # Para throughput
+
 cache = {}
 
 hits = 0 # Consultas que estan en cache
@@ -47,6 +50,8 @@ class FIFOCache:
         self.misses = 0
         self.evictions = 0
 
+        self.latencies = []
+
     def get(self,key): 
         if key in self.cache: # Verificar si query esta en cache
             self.hits += 1
@@ -67,6 +72,8 @@ class FIFOCache:
         self.queue.append(key)
 
     def execute(self,key,query_function,*args): # Agrupar funciones para simular ejecucion
+        t0=time.perf_counter() # Tiempo inicial, para medir latencia
+
         result = self.get(key)
         if result is not None:
             return result
@@ -74,17 +81,97 @@ class FIFOCache:
         result = query_function(*args)
         self.put(key,result)
 
+
+        latency=time.perf_counter()-t0 # Latencia
+        self.latencies.append(round(latency, 4))
+
         return result
     
     def show_metrics(self): # Mostrar metricas
         print("Capacidad de almacenamiento:", self.capacity,"queries")
         print("Hits: ", self.hits)
         print("Misses: ", self.misses)
-        print("Evictions: ", self.evictions) # Cantidad de accesos a backend
-
-        if (self.hits + self.misses) == 0:
+        total = self.hits + self.misses
+        if total == 0:
             print("Error al calcular Hit Rate")
         else:
-            hit_rate = self.hits / (self.hits + self.misses)
-            print("Hit Rate: ", hit_rate)
+            print(f"Eviction Rate: {round(self.evictions/total, 4)*100}%") # Cantidad de queries removidas de cache
+            print(f"Hit Rate: {round(self.hits/total, 4)*100}%")
+
+        latencia_prom = sum(self.latencies)/len(self.latencies)
+        print("Latencia promedio:",round(latencia_prom, 4),"segundos")
+        print(self.latencies) 
         
+
+
+class LRUCache:
+    def __init__(self, capacity=3):
+
+        self.capacity = capacity
+
+        self.cache = OrderedDict()
+
+        self.hits = 0
+        self.misses = 0
+        self.evictions = 0
+
+        self.latencies = []
+    
+    def get(self, key):
+        if key not in self.cache: # Verificar si query no esta en cache
+            self.misses += 1
+            return None
+
+        self.hits += 1
+        self.cache.move_to_end(key) # mover al final => mas reciente
+
+        return self.cache[key]
+    
+    def put(self, key, value):
+
+        if key in self.cache:
+            # actualizar y marcar como reciente
+            self.cache.move_to_end(key)
+            self.cache[key] = value
+            return
+
+        if len(self.cache) >= self.capacity:
+
+            # elimina el menos recientemente usado
+            oldest, _ = self.cache.popitem(last=False)
+
+            self.evictions += 1
+
+        self.cache[key] = value
+
+    def execute(self, key, query_function, *args):
+        t0=time.perf_counter() # Tiempo inicial, para medir latencia
+        result = self.get(key)
+
+        if result is not None:
+            return result
+
+        result = query_function(*args)
+
+        self.put(key, result)
+
+        latency=time.perf_counter()-t0 # Latencia
+        self.latencies.append(round(latency, 4))
+
+        return result
+    
+    def show_metrics(self): # Mostrar metricas
+        print("Capacidad de almacenamiento:", self.capacity,"queries")
+        print("Hits: ", self.hits)
+        print("Misses: ", self.misses)
+        total = self.hits + self.misses
+        if total == 0:
+            print("Error al calcular Hit Rate")
+        else:
+            print(f"Eviction Rate: {round(self.evictions/total, 4)*100}%") # Cantidad de queries removidas de cache
+            print(f"Hit Rate: {round(self.hits/total, 4)*100}%")
+
+        latencia_prom = sum(self.latencies)/len(self.latencies)
+        print("Latencia promedio:",round(latencia_prom, 4),"segundos")
+        print(self.latencies) 
+     

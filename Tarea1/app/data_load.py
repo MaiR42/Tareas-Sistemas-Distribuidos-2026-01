@@ -1,11 +1,14 @@
+from pathlib import Path
 import pandas as pd
 
-# # # Cargar dataset
+# Ruta absoluta dentro del contenedor (porque docker-compose monta ./data en /data)
+DATA_FILE = Path("/data/967_buildings.csv.gz")
 
 df = pd.read_csv(
-    "data/967_buildings.csv.gz", usecols=["latitude","longitude","area_in_meters","confidence"], compression='gzip',  # Por el momento solo importar eso
+    DATA_FILE,
+    usecols=["latitude", "longitude", "area_in_meters", "confidence"],
+    compression="gzip",
 )
-
 # # # Informacion de ubicacion por zona
 
 zones = {

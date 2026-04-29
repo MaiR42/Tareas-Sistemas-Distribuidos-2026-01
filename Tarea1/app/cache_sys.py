@@ -80,4 +80,11 @@ class FIFOCache:
         print("Capacidad de almacenamiento:", self.capacity,"queries")
         print("Hits: ", self.hits)
         print("Misses: ", self.misses)
-        print("Evictions: ", self.evictions)
+        print("Evictions: ", self.evictions) # Cantidad de accesos a backend
+
+        if (self.hits + self.misses) == 0:
+            print("Error al calcular Hit Rate")
+        else:
+            hit_rate = self.hits / (self.hits + self.misses)
+            print("Hit Rate: ", hit_rate)
+        

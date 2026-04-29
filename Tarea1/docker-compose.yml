@@ -4,9 +4,16 @@ services:
     image: redis:7
     ports:
       - "6379:6379"
+    command:
+      - redis-server
+      - --maxmemory
+      - 50mb
+      - --maxmemory-policy
+      - allkeys-lru # Politica de remocion LRU
 
   app:
     build: .
+    container_name: sistema_cache_app
     depends_on:
       - cache
 

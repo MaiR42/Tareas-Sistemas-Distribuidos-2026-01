@@ -1,6 +1,7 @@
 import os
 import redis
 import json
+import time
 
 from queries import (
     q1_count,
@@ -10,38 +11,64 @@ from queries import (
     q5_confidence_dist,
 )
 
-# Conexión correcta a Redis dentro de Docker
+# Para Redis (IMPORTANTE: host="cache")
 r = redis.Redis(
     host=os.getenv("REDIS_HOST", "cache"),
     port=6379,
     decode_responses=True
 )
 
+TTL_SECONDS = int(os.getenv("CACHE_TTL", 60)) # TTL (por default 60 segundos)
 
-r.set("prueba","hola",ex=60)
-print(r.get("prueba"))
+print("Worker iniciado, esperando consultas...")
+
+# -------- MÉTRICAS --------
+def record_hit():
+    r.incr("metrics:hits")
+
+def record_miss():
+    r.incr("metrics:misses")
+
+def record_latency(value):
+    r.rpush("metrics:latency", value)
+
+def record_request():
+    r.incr("metrics:requests")
 
 
-print("Esperando consultas...")
-
+# -------- LOOP PRINCIPAL --------
 while True:
-    _, raw = r.blpop("cola:consultas")
+    item = r.blpop("cola:consultas", timeout=5)
+    print("Item recibido:", item)
+    if item is None:
+        print("Esperando consultas...")
+        continue
+
+    _, raw = item
+    start = time.time()
+
+    record_request()
+
     query = json.loads(raw)
 
     qtype = query["type"]
     params = query["params"]
-
     cache_key = query["cache_key"]
 
-    # Revisar caché
     cached = r.get(cache_key)
+
     if cached:
         print(f"[CACHE HIT] {cache_key}")
+        record_hit()
+
+        latency = time.time() - start
+        record_latency(latency)
         continue
 
     print(f"[CACHE MISS] {cache_key}")
+    record_miss()
 
-    # Ejecutar consulta
+    # -------- EJECUCIÓN --------
     if qtype == "Q1":
         result = q1_count(**params)
     elif qtype == "Q2":
@@ -55,7 +82,13 @@ while True:
     else:
         result = {"error": "Unknown query type"}
 
-    # Guardar en caché (con TTL si quieres después)
-    r.set(cache_key, json.dumps(result))
+    # -------- CACHE CON TTL --------
+    r.setex(cache_key, TTL_SECONDS, json.dumps(result))
 
-    print(f"Resultado guardado en cache: {cache_key}")
+    latency = time.time() - start
+    record_latency(latency)
+
+    print(f"Guardado en cache: {cache_key}")
+
+    print("=============")
+    print()

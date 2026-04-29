@@ -1,3 +1,5 @@
+#### EVICTION RATE es evictions / min
+
 from collections import OrderedDict # Para facilitar hacer la politica LRU
 import time # Para throughput
 
@@ -75,15 +77,16 @@ class FIFOCache:
         t0=time.perf_counter() # Tiempo inicial, para medir latencia
 
         result = self.get(key)
-        if result is not None:
-            return result
+        if result is None:
+            result = query_function(*args)
+            self.put(key,result)
 
-        result = query_function(*args)
-        self.put(key,result)
+        #result = query_function(*args)
+        #self.put(key,result)
 
 
         latency=time.perf_counter()-t0 # Latencia
-        self.latencies.append(round(latency, 4))
+        self.latencies.append(latency)
 
         return result
     
@@ -99,8 +102,8 @@ class FIFOCache:
             print(f"Hit Rate: {round(self.hits/total, 4)*100}%")
 
         latencia_prom = sum(self.latencies)/len(self.latencies)
-        print("Latencia promedio:",round(latencia_prom, 4),"segundos")
-        print(self.latencies) 
+        print("Latencia promedio:",round(latencia_prom, 6),"segundos")
+        #print(self.latencies) 
         
 
 
@@ -148,15 +151,16 @@ class LRUCache:
         t0=time.perf_counter() # Tiempo inicial, para medir latencia
         result = self.get(key)
 
-        if result is not None:
-            return result
+        if result is None:
+            result = query_function(*args)
+            self.put(key,result)
 
-        result = query_function(*args)
+        #result = query_function(*args)
 
-        self.put(key, result)
+        #self.put(key, result)
 
         latency=time.perf_counter()-t0 # Latencia
-        self.latencies.append(round(latency, 4))
+        self.latencies.append(latency)
 
         return result
     
@@ -172,6 +176,6 @@ class LRUCache:
             print(f"Hit Rate: {round(self.hits/total, 4)*100}%")
 
         latencia_prom = sum(self.latencies)/len(self.latencies)
-        print("Latencia promedio:",round(latencia_prom, 4),"segundos")
-        print(self.latencies) 
+        print("Latencia promedio:",round(latencia_prom, 6),"segundos")
+        #print(self.latencies) 
      

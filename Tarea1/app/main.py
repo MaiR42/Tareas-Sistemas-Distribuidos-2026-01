@@ -1,69 +1,28 @@
 print("Prueba del sistema...")
+import redis
+import json
+from traffic_gen import generate_zipf, generate_uniform
+from queries import *
 
-import time
-from queries import q1_count, q2_area, q3_density, q4_compare, q5_confidence_dist
-from traffic_gen import generate_uniform_queries, generate_zipf_queries, gen_time
-from cache_sys import cached_query, show_metricas, FIFOCache, LRUCache
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+r = redis.Redis(
+   host="cache",
+   port=6379,
+   decode_responses=True
+)
 
-print("==================PRUEBA FIFO==================")
+def main():
 
-init_time = 0
-final_time = 0
+    consultas = generate_zipf(100)
 
-init_time = time.perf_counter()
+    for c in consultas:
 
-cache = FIFOCache()
+        r.rpush(
+          "cola:consultas",
+          json.dumps(c)
+        )
 
-for zone in generate_uniform_queries():
+        print("Enviada:",c)
 
-    result = cache.execute(
-        f"count:{zone}",
-        q1_count,
-        zone
-    )
-
-final_time = time.perf_counter() - init_time
-print("Tiempo en simular cache: ", final_time)
-gen_time()
-print(cache.show_metrics())
-
-print("==================PRUEBA FIFO (zipf)==================")
-
-init_time = 0
-final_time = 0
-
-init_time = time.perf_counter()
-
-cache = FIFOCache()
-
-for zone in generate_zipf_queries():
-
-    result = cache.execute(
-        f"count:{zone}",
-        q1_count,
-        zone
-    )
-
-final_time = time.perf_counter() - init_time
-print("Tiempo en simular cache: ", final_time)
-gen_time()
-print(cache.show_metrics())
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-print("==================PRUEBA LRU==================")
-init_time = time.perf_counter()
-cache = LRUCache()
-
-for zone in generate_uniform_queries():
-
-    result = cache.execute(
-        f"count:{zone}",
-        q1_count,
-        zone
-    )
-final_time = time.perf_counter() - init_time
-print("Tiempo en simular cache: ", final_time)
-gen_time()
-print(cache.show_metrics())
+if __name__=="__main__":
+    main()

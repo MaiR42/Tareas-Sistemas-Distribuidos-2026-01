@@ -28,10 +28,3 @@ for zone_id, (lat_min,lat_max,lon_min,lon_max) in zones.items():
       (df["longitude"] >= lon_min) &
       (df["longitude"] <= lon_max)
     ]
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-def main():
-    print("hoal")
-
-if __name__ == "__main__":
-    main()

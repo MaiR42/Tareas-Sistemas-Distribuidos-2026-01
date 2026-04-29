@@ -1,7 +1,13 @@
-#### EVICTION RATE es evictions / min
+#### piden EVICTION RATE como evictions / min
 
 from collections import OrderedDict # Para facilitar hacer la politica LRU
 import time # Para throughput
+import json
+
+def result_size(value): # Para obtener el tamaño de consultas en bytes
+    return len(
+        json.dumps(value).encode()
+    )
 
 cache = {}
 
@@ -39,13 +45,13 @@ def show_metricas():
 
 # Politica de remocion FIFO
 class FIFOCache:
-    # Definir temporalmente la capacidad de almacenar queries en 3, para probar
-    def __init__(self, capacity=3):
-
-        self.capacity = capacity
+    # Definir temporalmente la capacidad de almacenar 1 MB, para probar
+    def __init__(self, capacity_mb=10):
+        self.capacity_mb = capacity_mb
+        self.capacity_bytes = capacity_mb * 1024 * 1024
+        self.current_bytes = 0
 
         self.cache = {}
-
         self.queue = []
 
         self.hits = 0
@@ -65,13 +71,20 @@ class FIFOCache:
     def put(self,key,value): # Ingresar query a cache
         if key in self.cache:
             return
-        if len(self.cache) >= self.capacity: # Verificar si cache esta lleno
+        item_size = result_size(value)
+
+        while self.current_bytes + item_size > self.capacity_bytes: # Verificar si cache esta lleno
             oldest = self.queue.pop(0) # Ultima query en cache sera removida
-            del self.cache[oldest]
+            old_value = self.cache[oldest]
+
+            self.current_bytes -= result_size(old_value)
+            del self.cache[oldest] # Ultima query en cache sera removida
             self.evictions += 1
 
         self.cache[key] = value
         self.queue.append(key)
+
+        self.current_bytes += item_size
 
     def execute(self,key,query_function,*args): # Agrupar funciones para simular ejecucion
         t0=time.perf_counter() # Tiempo inicial, para medir latencia
@@ -79,7 +92,11 @@ class FIFOCache:
         result = self.get(key)
         if result is None:
             result = query_function(*args)
-            self.put(key,result)
+            payload = { # Aumenta el tamaño de la consulta de forma sintetica (agrega 500KB)
+                "result": result,
+                "padding": "x"*500000
+            }
+            self.put(key,payload)
 
         #result = query_function(*args)
         #self.put(key,result)
@@ -91,7 +108,8 @@ class FIFOCache:
         return result
     
     def show_metrics(self): # Mostrar metricas
-        print("Capacidad de almacenamiento:", self.capacity,"queries")
+        print("Capacidad de almacenamiento:", self.capacity_mb,"MB")
+        print("Cache usado (current):",self.current_bytes/(1024*1024),"MB")
         print("Hits: ", self.hits)
         print("Misses: ", self.misses)
         total = self.hits + self.misses
@@ -108,10 +126,10 @@ class FIFOCache:
 
 
 class LRUCache:
-    def __init__(self, capacity=3):
-
-        self.capacity = capacity
-
+    def __init__(self, capacity_mb=10):
+        self.capacity_mb = capacity_mb
+        self.capacity_bytes = capacity_mb * 1024 * 1024
+        self.current_bytes = 0
         self.cache = OrderedDict()
 
         self.hits = 0
@@ -130,22 +148,26 @@ class LRUCache:
 
         return self.cache[key]
     
-    def put(self, key, value):
-
+    def put(self,key,value):
         if key in self.cache:
-            # actualizar y marcar como reciente
-            self.cache.move_to_end(key)
-            self.cache[key] = value
+            self.cache.move_to_end(key) # actualizar y marcar como reciente
+            self.cache[key]=value
             return
 
-        if len(self.cache) >= self.capacity:
+        item_size = result_size(value)
 
-            # elimina el menos recientemente usado
-            oldest, _ = self.cache.popitem(last=False)
+        while self.current_bytes + item_size > self.capacity_bytes: 
+
+            oldest, old_value = self.cache.popitem(last=False) # elimina el menos recientemente usado
+
+            self.current_bytes -= result_size(old_value)
 
             self.evictions += 1
 
-        self.cache[key] = value
+        self.cache[key]=value
+
+        self.current_bytes += item_size
+
 
     def execute(self, key, query_function, *args):
         t0=time.perf_counter() # Tiempo inicial, para medir latencia
@@ -153,7 +175,11 @@ class LRUCache:
 
         if result is None:
             result = query_function(*args)
-            self.put(key,result)
+            payload = { # Aumenta el tamaño de la consulta de forma sintetica (agrega 500KB)
+                "result": result,
+                "padding": "x"*500000
+            }
+            self.put(key,payload)
 
         #result = query_function(*args)
 
@@ -165,7 +191,8 @@ class LRUCache:
         return result
     
     def show_metrics(self): # Mostrar metricas
-        print("Capacidad de almacenamiento:", self.capacity,"queries")
+        print("Capacidad de almacenamiento:", self.capacity_mb,"MB")
+        print("Cache usado (current):",self.current_bytes/(1024*1024),"MB")
         print("Hits: ", self.hits)
         print("Misses: ", self.misses)
         total = self.hits + self.misses

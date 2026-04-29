@@ -1,4 +1,4 @@
-#### piden EVICTION RATE como evictions / min
+#### se pide EVICTION RATE como evictions / min
 
 from collections import OrderedDict # Para facilitar hacer la politica LRU
 import time # Para throughput
@@ -45,12 +45,15 @@ def show_metricas():
 
 # Politica de remocion FIFO
 class FIFOCache:
-    # Definir temporalmente la capacidad de almacenar 1 MB, para probar
-    def __init__(self, capacity_mb=10):
+    # Definir temporalmente la capacidad de almacenar 1 MB, para probar. ttl = 0.01
+    def __init__(self, capacity_mb=10, ttl=1):
         self.capacity_mb = capacity_mb
         self.capacity_bytes = capacity_mb * 1024 * 1024
-        self.current_bytes = 0
 
+        self.ttl = ttl
+        self.expirations = 0
+
+        self.current_bytes = 0
         self.cache = {}
         self.queue = []
 
@@ -60,13 +63,26 @@ class FIFOCache:
 
         self.latencies = []
 
-    def get(self,key): 
-        if key in self.cache: # Verificar si query esta en cache
-            self.hits += 1
-            return self.cache[key]
+    def get(self,key):
+        if key not in self.cache:
+            self.misses += 1
+            return None
 
-        self.misses += 1
-        return None
+        value,timestamp = self.cache[key]
+
+        if time.time() - timestamp > self.ttl: #  Verificar TTL
+            del self.cache[key]
+            
+            if key in self.queue:
+                self.queue.remove(key)
+
+            self.expirations += 1
+            self.misses += 1
+            return None
+
+        self.hits += 1
+
+        return value
     
     def put(self,key,value): # Ingresar query a cache
         if key in self.cache:
@@ -81,7 +97,7 @@ class FIFOCache:
             del self.cache[oldest] # Ultima query en cache sera removida
             self.evictions += 1
 
-        self.cache[key] = value
+        self.cache[key] = (value, time.time())
         self.queue.append(key)
 
         self.current_bytes += item_size
@@ -121,14 +137,24 @@ class FIFOCache:
 
         latencia_prom = sum(self.latencies)/len(self.latencies)
         print("Latencia promedio:",round(latencia_prom, 6),"segundos")
-        #print(self.latencies) 
-        
+        print("Consultas expiradas por TTL: ", self.expirations)
 
+        #print("===========LATENCIAS===========")
+        #print(self.latencies) 
+        #print("===============================")
+
+        
+        
+# Politica de remocion LRU
 
 class LRUCache:
-    def __init__(self, capacity_mb=10):
+    def __init__(self, capacity_mb=10, ttl=1):
         self.capacity_mb = capacity_mb
         self.capacity_bytes = capacity_mb * 1024 * 1024
+
+        self.ttl = ttl
+        self.expirations = 0
+
         self.current_bytes = 0
         self.cache = OrderedDict()
 
@@ -138,20 +164,29 @@ class LRUCache:
 
         self.latencies = []
     
-    def get(self, key):
-        if key not in self.cache: # Verificar si query no esta en cache
+    def get(self,key):
+        if key not in self.cache:
             self.misses += 1
             return None
 
-        self.hits += 1
-        self.cache.move_to_end(key) # mover al final => mas reciente
+        value,timestamp = self.cache[key]
 
-        return self.cache[key]
+        if time.time()-timestamp > self.ttl: # Verificar TTL
+            self.expirations += 1
+            del self.cache[key]
+            self.misses +=1
+
+            return None
+
+        self.hits +=1
+        self.cache.move_to_end(key)
+
+        return value
     
     def put(self,key,value):
         if key in self.cache:
             self.cache.move_to_end(key) # actualizar y marcar como reciente
-            self.cache[key]=value
+            self.cache[key] = (value, time.time())
             return
 
         item_size = result_size(value)
@@ -164,7 +199,7 @@ class LRUCache:
 
             self.evictions += 1
 
-        self.cache[key]=value
+        self.cache[key] = (value, time.time())
 
         self.current_bytes += item_size
 
@@ -204,5 +239,11 @@ class LRUCache:
 
         latencia_prom = sum(self.latencies)/len(self.latencies)
         print("Latencia promedio:",round(latencia_prom, 6),"segundos")
+        print("Consultas expiradas por TTL: ", self.expirations)
+
+        #print("===========LATENCIAS===========")
         #print(self.latencies) 
+        #print("===============================")
+
+        
      

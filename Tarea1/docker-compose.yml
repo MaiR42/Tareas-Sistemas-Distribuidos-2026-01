@@ -16,6 +16,9 @@ services:
     container_name: sistema_cache_app
     depends_on:
       - cache
+    volumes:
+      - ./app:/app
+      - ./data:/data
 
     environment:
       REDIS_HOST: cache

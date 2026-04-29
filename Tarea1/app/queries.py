@@ -50,23 +50,3 @@ def q5_confidence_dist(zone_id, bins=5):
     return [
         {"bucket": i, "min": float(edges[i]), "max": float(edges[i+1]),
             "count": int(counts[i])} for i in range(bins)]
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-def main():
-    print("Hoal mundo")
-
-    # Debug
-    print("========= Consulas =========")
-
-    print(q1_count("Z1"))
-    print(q2_area("Z1"))
-    print(q3_density("Z1"))
-    print(q4_compare("Z1", "Z2"))
-    print(q5_confidence_dist("Z1"))
-
-
-
-
-if __name__ == "__main__":
-    main()

@@ -5,7 +5,7 @@ import numpy as np
 
 r = redis.Redis(host="cache", port=6379, decode_responses=True)
 
-stats = r.info('stats')
+info = r.info('stats')
 
 hits = int(r.get("metrics:hits") or 0)
 misses = int(r.get("metrics:misses") or 0)
@@ -21,7 +21,6 @@ p50 = np.percentile(lat, 50) if lat else 0
 p95 = np.percentile(lat, 95) if lat else 0
 
 # Evictions
-info = r.info("stats")
 mem_info = r.info('memory')
 
 evicted_keys = info.get("evicted_keys", 0)
@@ -36,4 +35,4 @@ print("p50:", p50)
 print("p95:", p95)
 
 print(f"Capacidad: {int(capacity['maxmemory']) / (1024*1024)} MB")
-print(f"Memoria usada en cache: {used_memory_bytes / (1024*1024)} MB")
+print(f"Memoria usada en cache actualmente: {used_memory_bytes / (1024*1024)} MB")

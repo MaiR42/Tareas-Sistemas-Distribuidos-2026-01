@@ -20,11 +20,12 @@ if total != 0:
 p50 = np.percentile(lat, 50) if lat else 0
 p95 = np.percentile(lat, 95) if lat else 0
 
-# Evictions
-mem_info = r.info('memory')
-
 evicted_keys = info.get("evicted_keys", 0)
+
+expired_keys = info.get('expired_keys', 0)
+
 capacity = r.config_get("maxmemory")
+mem_info = r.info('memory')
 used_memory_bytes = mem_info.get("used_memory", 0)
 
 print("Hits:", hits)
@@ -36,3 +37,5 @@ print("p95:", p95)
 
 print(f"Capacidad: {int(capacity['maxmemory']) / (1024*1024)} MB")
 print(f"Memoria usada en cache actualmente: {used_memory_bytes / (1024*1024)} MB")
+
+print("Consultas expiradas (por TTL): ",expired_keys)

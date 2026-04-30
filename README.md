@@ -116,3 +116,105 @@ docker-compose exec app python metrics.py
 
 ---
 
+## Configuración de Cache
+
+El sistema permite configurar distintos parámetros para evaluar el comportamiento de la caché:
+
+- **Capacidad de memoria:** 2 MB, 4 MB y 8 MB
+- **Política de reemplazo:**
+  - LRU (Least Recently Used)
+  - LFU (Least Frequently Used)
+- **TTL (Time To Live):**
+  - 60 segundos (configuración base)
+  - 20 segundos (escenario de estrés)
+
+Estas configuraciones permiten analizar el impacto de cada parámetro en el rendimiento del sistema.
+
+---
+
+## Dataset
+
+El sistema utiliza el dataset **Google Open Buildings**, filtrado para la Región Metropolitana de Santiago.
+
+Cada registro contiene:
+
+- Latitud
+- Longitud
+- Área de la edificación (m²)
+- Nivel de confianza
+
+Las consultas se realizan sobre zonas geográficas predefinidas, lo que permite simular patrones de acceso realistas.
+
+---
+
+## Tipos de Consultas
+
+El sistema implementa cinco tipos de consultas:
+
+- **Q1:** Conteo de edificaciones por zona
+- **Q2:** Área promedio y total
+- **Q3:** Densidad de edificaciones
+- **Q4:** Comparación entre zonas
+- **Q5:** Distribución de confianza
+
+Estas consultas son ejecutadas en memoria y sus resultados son almacenados en caché.
+
+---
+
+## Experimentos Realizados
+
+Los experimentos fueron ejecutados bajo las siguientes condiciones:
+
+- Duración: 10 minutos por escenario
+- Intervalo de tráfico: 0.01 segundos
+- Distribuciones evaluadas:
+  - Uniforme
+  - Zipf
+
+Se evaluaron múltiples combinaciones de:
+- Tamaño de caché
+- Política de reemplazo
+- TTL
+
+---
+
+## Resultados Relevantes
+
+A partir de los experimentos realizados, se observó que:
+
+- A mayor memoria, menor cantidad de evictions.
+- Con 8 MB de memoria, las evictions desaparecen completamente.
+- La política **LFU** presenta mejor rendimiento que LRU en escenarios con alta repetición.
+- La distribución **Zipf** favorece el uso de caché.
+- Un TTL bajo (20 segundos) reduce significativamente el rendimiento del sistema.
+
+---
+
+## Estado del Proyecto
+
+Proyecto finalizado con implementación completa de:
+
+- Arquitectura distribuida
+- Sistema de caché con Redis
+- Generación de tráfico sintético
+- Métricas de rendimiento
+- Análisis experimental
+
+---
+
+
+---
+
+## Autores
+
+- Mair Escobar
+- Martín Quintana
+
+---
+
+## Consideraciones
+
+Este proyecto fue desarrollado con fines académicos para la asignatura de Sistemas Distribuidos.
+
+Todas las decisiones de diseño fueron justificadas y evaluadas mediante experimentación empírica.
+

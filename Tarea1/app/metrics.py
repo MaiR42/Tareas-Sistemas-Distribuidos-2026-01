@@ -39,3 +39,13 @@ print(f"Capacidad: {int(capacity['maxmemory']) / (1024*1024)} MB")
 print(f"Memoria usada en cache actualmente: {used_memory_bytes / (1024*1024)} MB")
 
 print("Consultas expiradas (por TTL): ",expired_keys)
+
+timestamps = [float(x) for x in r.lrange("metrics:timestamps", 0, -1)]
+
+if len(timestamps) > 1:
+    total_time = timestamps[-1] - timestamps[0]
+    throughput = len(timestamps) / total_time
+else:
+    throughput = 0
+
+print("Throughput (req/s):", throughput)

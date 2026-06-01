@@ -1,0 +1,25 @@
+sudo su
+
+
+# Para crear
+docker-compose up --build
+
+
+# Para iniciar una vez ya creado
+docker-compose up
+
+# Si se actualizo engine.py # Mentira no funciona
+docker-compose restart app
+
+# Pa cerrarlo o ns
+docker-compose down -v
+
+
+
+
+# Gen datos
+docker exec -it sistema_cache_app python main.py
+
+
+# Ver metricas
+docker exec -it sistema_cache_app python metrics.py

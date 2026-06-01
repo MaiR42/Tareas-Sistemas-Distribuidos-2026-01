@@ -1,0 +1,32 @@
+from pathlib import Path
+import pandas as pd
+
+# Ruta absoluta dentro del contenedor (porque docker-compose monta ./data en /data)
+DATA_FILE = Path("/data/967_buildings.csv.gz")
+
+df = pd.read_csv(
+    DATA_FILE,
+    usecols=["latitude", "longitude", "area_in_meters", "confidence"],
+    compression="gzip",
+)
+# # # Informacion de ubicacion por zona
+
+zones = {
+# Zone ID # lat_min # lat_max # lon_min# lon_max
+    "Z1": (-33.445,-33.420,-70.640,-70.600),
+    "Z2": (-33.420,-33.390,-70.600,-70.550),
+    "Z3": (-33.530,-33.490,-70.790,-70.740),
+    "Z4": (-33.460,-33.430,-70.670,-70.630),
+    "Z5": (-33.470,-33.430,-70.810,-70.760)
+}
+
+data = {}
+
+for zone_id, (lat_min,lat_max,lon_min,lon_max) in zones.items():
+
+    data[zone_id] = df[
+      (df["latitude"] >= lat_min) &
+      (df["latitude"] <= lat_max) &
+      (df["longitude"] >= lon_min) &
+      (df["longitude"] <= lon_max)
+    ]

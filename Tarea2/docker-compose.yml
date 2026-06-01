@@ -1,0 +1,25 @@
+services:
+
+  cache:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      - --maxmemory
+      - 2mb # Memoria cache
+      - --maxmemory-policy
+      - allkeys-lru # Politica de remocion: allkeys-lru - allkeys-lfu
+
+  app:
+    build: .
+    container_name: sistema_cache_app
+    depends_on:
+      - cache
+    volumes:
+      - ./app:/app
+      - ./data:/data
+
+    environment:
+      REDIS_HOST: cache
+      TRAFFIC_INTERVAL: 0.01 # Tiempo entre peticiones

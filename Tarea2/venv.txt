@@ -1,0 +1,17 @@
+# Crear
+
+python3 -m venv venv
+
+# Entrar
+
+source venv/bin/activate
+
+# Copiar requirements
+
+pip install pipreqs
+pipreqs . --force
+
+
+# Salir
+
+deactivate

@@ -1,3 +1,4 @@
+# !!! No tocar para Tarea2 !!!
 from data_load import data
 from data_load import zones
 

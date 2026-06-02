@@ -4,6 +4,9 @@ import json
 import time
 import redis
 
+
+from config import GEN_TRAFIC_DISTR, TTL, MAX_RETRIES
+from config import TTL
 from traffic_gen import generate_query
 
 r = redis.Redis(
@@ -12,10 +15,15 @@ r = redis.Redis(
     decode_responses=True
 )
 
-distribution = os.getenv("TRAFFIC_DIST", "zipf") ########## DISTRIBUCION #uniform o zipf
+distribution = os.getenv("TRAFFIC_DIST", GEN_TRAFIC_DISTR)
 interval = float(os.getenv("TRAFFIC_INTERVAL", "1"))
 
+# DEBUG TEXT
+print()
 print(f"Generador iniciado con distribución: {distribution}")
+print(f"Sistema cache iniciado con TTL: {TTL}")
+print(f"Sistema de manejo de fallos iniciado con maximo de reintentos: {MAX_RETRIES}")
+print()
 
 
 def build_payload(q):

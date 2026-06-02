@@ -1,5 +1,7 @@
 # Solamente para mostrar las metricas
 
+# !!! En tarea 2 incluir: retry_count, dlq_count
+
 import redis
 import numpy as np
 

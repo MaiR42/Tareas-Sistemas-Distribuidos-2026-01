@@ -3,6 +3,8 @@ import redis
 import json
 import time
 
+from config import TTL
+
 from queries import (
     q1_count,
     q2_area,
@@ -18,7 +20,7 @@ r = redis.Redis(
     decode_responses=True
 )
 
-TTL_SECONDS = int(os.getenv("CACHE_TTL", 20)) # TTL (por default 60 segundos)
+TTL_SECONDS = int(os.getenv("CACHE_TTL", TTL)) # TTL (por default 60 segundos)
 
 print("Worker iniciado, esperando consultas...")
 

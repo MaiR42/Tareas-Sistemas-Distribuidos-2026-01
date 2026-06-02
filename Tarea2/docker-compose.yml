@@ -22,4 +22,4 @@ services:
 
     environment:
       REDIS_HOST: cache
-      TRAFFIC_INTERVAL: 0.01 # Tiempo entre peticiones
+      TRAFFIC_INTERVAL: 0.1 # Tiempo entre peticiones

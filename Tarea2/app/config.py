@@ -11,4 +11,11 @@ DEBUG = False # Para mostrar los prints principalmente
 
 MAX_RETRIES = 2 # consumer_fakfa.py
 FAILURE_RATE = 0.7 # Prob. de simular fallas en misses # consumer_kafka.py
-PROD_QUERY_QUANTITY = 10000 # Cantidad de queries que manda un producer # producer_kafka.py
+PROD_QUERY_QUANTITY = 1000 # Cantidad de queries que manda un producer # producer_kafka.py
+
+# Variables para el CSV mas que nada
+
+CONSUMERS = 1
+# Del docker-compose.yml
+CACHE_REMOTION_POLITIC = "allkeys-lru"
+CACHE_MEMORY = "2mb"

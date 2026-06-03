@@ -7,7 +7,7 @@ import time
 
 
 from queries import *
-from config import FAILURE_RATE, MAX_RETRIES
+from config import FAILURE_RATE, MAX_RETRIES, TTL, DEBUG
 
 import redis
 r = redis.Redis(
@@ -76,36 +76,32 @@ def procesar_consulta(c):
 
 # Testeo
 print("iniciado el consumer:", socket.gethostname())
-print("PID:", os.getpid())
+print("PID:", os.getpid()) # Ver que se generen consumers diferentes
 print("Esperando mensajes...")
 
 
-
 for msg in consumer:
-    #print("TOPIC:", msg.topic)
-    #print("VALUE:", msg.value)
     consulta = msg.value
+
+    is_retry = msg.topic == "consultas_retry"
 
     queue_delay = (time.time() - consulta["created_at"]) # Para las metricas
     r.rpush("metrics:queue_delay", queue_delay)
 
-    print(
-        "Consumer:",
-        socket.gethostname(),
-        "Partition:",
-        msg.partition
-    )
+    
+    if consulta["tipo"] == "Q4":
+        cache_key = f"query:{consulta['tipo']}:{consulta['zona']}:{consulta['zona_b']}:{consulta['confidence_min']}" # Indicar zona_b
+    elif consulta["tipo"] == "Q5":
+        cache_key = f"query:{consulta['tipo']}:{consulta['zona']}:{consulta['bins']}" # Indicar bins
+    else:
+        cache_key = f"query:{consulta['tipo']}:{consulta['zona']}:{consulta['confidence_min']}" # Default para Q1, Q2, Q3
 
-    cache_key = json.dumps(
-        consulta,
-        sort_keys=True
-    )
     cached = r.get(cache_key)
-    if cached:
+    if cached and not is_retry:
         r.incr("metrics:hits")
         print("HIT")
 
-        print("GUARDANDO TIMESTAMP")
+         
         r.rpush(
             "metrics:timestamps", # Metricas para throughput
             time.time()
@@ -114,93 +110,79 @@ for msg in consumer:
 
     else:
         r.incr("metrics:misses")
-        print("MISS")
+        if not is_retry:
+            print("MISS")
+        
+        #resultado = procesar_consulta(consulta)
+     
+        try: # Simular falla
+            if random.random() < FAILURE_RATE:
+                r.incr("metrics:failures") # Para las metricas
 
-        resultado = procesar_consulta(consulta)
-
-        print("GUARDANDO TIMESTAMP")
-        r.rpush(
-            "metrics:timestamps", # Metricas para throughput
-            time.time()
-        )
-
-        r.set(
-            cache_key,
-            json.dumps(resultado),
-            ex=60
-        )
-
-    try: # Simular falla
-        if random.random() < FAILURE_RATE:
-            r.incr("metrics:failures") # Para las metricas
-
-            r.set( # Para recovery time
-                f"failure_start:{consulta['id']}",
-                time.time()
-            ) 
-
-            raise Exception("Falla simulada")
-
-        if consulta["retries"] > 0: # Indica que consulta se recupero despues de fallar
-            r.incr("metrics:recoveries") # Para las metricas
-
-            start = r.get( # Para recovery time
-                f"failure_start:{consulta['id']}"
-            )
-            if start:
-                recovery_time = (
+                r.set( # Para recovery time
+                    f"failure_start:{consulta['id']}",
                     time.time()
-                    - float(start)
-                )
-                r.rpush(
-                    "metrics:recovery_times",
-                    recovery_time
-                )
-                r.delete(
-                    f"failure_start:{consulta['id']}"
                 ) 
 
-        resultado = procesar_consulta(consulta)
+                raise Exception("Falla simulada")
 
-        print("GUARDANDO TIMESTAMP")
-        r.rpush(
-            "metrics:timestamps", # Metricas para throughput
-            time.time()
-        )
+            if consulta['retries'] > 0: # Indica que consulta se recupero despues de fallar
+                r.incr("metrics:recoveries") # Para las metricas
 
-    except Exception: # Hacer retry
-        r.incr("metrics:retry_count") # Para las metricas
-        consulta["retries"] += 1
+                start = r.get( # Para recovery time
+                    f"failure_start:{consulta['id']}"
+                )
+                if start:
+                    recovery_time = (
+                        time.time()
+                        - float(start)
+                    )
+                    r.rpush(
+                        "metrics:recovery_times",
+                        recovery_time
+                    )
+                    r.delete(
+                        f"failure_start:{consulta['id']}"
+                    ) 
 
-        if consulta["retries"] <= MAX_RETRIES: # Si se no se llego al limite entonces realizar retry
-
-            producer.send(
-                "consultas_retry",
-                consulta
+            resultado = procesar_consulta(consulta)
+        
+            r.rpush(
+                "metrics:timestamps", # Metricas para throughput
+                time.time()
             )
 
-            print(
-                f"Retry {consulta['retries']} "
-                f"para consulta:{consulta['id']}"
-            )
+            r.set(cache_key, json.dumps(resultado), ex=TTL)
 
-        else: # Sino indicar a DLQ
-            r.incr("metrics:dlq_count") # Para las metricas
-            producer.send(
-                "consultas_dlq",
-                consulta
-            )
+        except Exception: # Hacer retry
+            r.incr("metrics:retry_count") # Para las metricas
+            consulta["retries"] += 1
 
-            print(f"Limite de retrys alcanzado\n DLQ consulta:{consulta['id']}")
-        continue
+            if consulta["retries"] <= MAX_RETRIES: # Si se no se llego al limite entonces realizar retry
 
+                producer.send(
+                    "consultas_retry",
+                    consulta
+                )
 
+                print(
+                    f"Retry {consulta['retries']} "
+                    f"para consulta:{consulta['id']}"
+                )
 
-    
+            else: # Sino indicar a DLQ
+                print("DLQ")
+                r.incr("metrics:dlq_count") # Para las metricas
+                producer.send(
+                    "consultas_dlq",
+                    consulta
+                )
+
+                print(f"Limite de retrys alcanzado\n DLQ consulta:{consulta['id']}")
+            continue
 
     ##
 
-    print("RECIBIDO:")
-    print(consulta)
-
-    print(resultado)
+    print("RECIBIDO:") if DEBUG else 0
+    print(consulta) if DEBUG else 0
+    print(resultado) if DEBUG else 0

@@ -66,9 +66,12 @@ print("========================================")
 print("Backlog Kafka")
 print("========================================")
 backlogs, backlog_total = get_backlog_size()
-print("Backlog consultas:", backlogs.get("consultas", 0))
+backlog_consultas = backlogs.get("consultas", 0)
+backlog_retry = backlogs.get("consultas_retry", 0)
 
-print("Backlog retry:", backlogs.get("consultas_retry", 0))
+print("Backlog consultas:", backlog_consultas)
+
+print("Backlog retry:", backlog_retry)
 
 print("Backlog total:", backlog_total)
 
@@ -228,6 +231,9 @@ row = [
     avg_recovery_time,
     avg_queue_delay,
     round(throughput,2),
+    backlog_consultas,      # Backlog del topic consultas
+    backlog_retry,          # Backlog del topic consultas_retry
+    backlog_total,
     
 ]
 
@@ -266,6 +272,9 @@ with open(file_path, "a", newline="") as f:
             "recovery_time",
             "queue_delay",
             "throughput",
+            "backlog_consultas",    # Nuevo
+            "backlog_retry",        # Nuevo
+            "backlog_total",
             
         ])
 

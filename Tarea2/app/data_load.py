@@ -31,3 +31,7 @@ for zone_id, (lat_min,lat_max,lon_min,lon_max) in zones.items():
       (df["longitude"] >= lon_min) &
       (df["longitude"] <= lon_max)
     ]
+
+
+#print("Shape:", df.shape)
+#print(f"El dataset tiene {df.shape[0]} filas y {df.shape[1]} columnas")

@@ -197,6 +197,8 @@ print("Throughput (req/s): ", round(throughput, 2)) # Pedido
 
 # Exportar Metricas
 
+print("===============Guardando metricas...===============")
+
 import csv
 import os
 from datetime import datetime

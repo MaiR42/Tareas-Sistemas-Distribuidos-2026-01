@@ -45,9 +45,9 @@ def generate_query(distribution="zipf"): #distribution: "zipf" o "uniform"
 
     tipo = random.choice(tipos)
     consulta = {
-        "id": str(uuid.uuid4()), # id unico
-        "created_at": time.time(), # Para el timestamp
-        "retries": 0, # Cantidad de reintentos, default en 0
+        "id": str(uuid.uuid4()), # id unico añadido en tarea 2
+        "created_at": time.time(), # Para el timestamp añadido en tarea 2
+        "retries": 0, # Cantidad de reintentos, default en 0 añadido en tarea 2
 
         "tipo": tipo,
         "zona": zona

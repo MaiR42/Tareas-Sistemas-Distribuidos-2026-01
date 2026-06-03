@@ -207,8 +207,18 @@ row = [
     datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     GEN_TRAFIC_DISTR,
     TTL,
-    FAILURE_RATE,
+    round(FAILURE_RATE*100,2),
     MAX_RETRIES,
+
+    CACHE_MEMORY, #d
+    CACHE_REMOTION_POLITIC,
+
+    CONSUMERS,
+
+    hits,
+    misses,
+    round(hit_rate * 100,2),
+
     retry_count,
     round(retry_count/total*100,2) if total != 0 else 0,
     dlq_count,
@@ -218,9 +228,7 @@ row = [
     avg_recovery_time,
     avg_queue_delay,
     round(throughput,2),
-    hits,
-    misses,
-    hit_rate
+    
 ]
 
 os.makedirs("results", exist_ok=True)
@@ -237,20 +245,28 @@ with open(file_path, "a", newline="") as f:
             "timestamp",
             "distribution",
             "ttl",
-            "failure_rate",
+            "failure_rate (%)",
             "max_retries",
+
+            "cache_memory",
+            "cache_remotion_politic",
+
+            "consumers_quantity",
+
+            "hits", # añadido
+            "misses",
+            "hit_rate (%)",
+
             "retries",
-            "retry_rate",
+            "retry_rate (%)",
             "dlq",
-            "dlq_rate",
+            "dlq_rate (%)",
             "recoveries",
-            "recovery_rate",
+            "recovery_rate (%)",
             "recovery_time",
             "queue_delay",
             "throughput",
-            "hits", # añadido
-            "misses",
-            "hit_rate"
+            
         ])
 
     writer.writerow(row)

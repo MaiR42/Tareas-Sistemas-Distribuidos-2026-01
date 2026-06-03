@@ -104,14 +104,24 @@ for msg in consumer:
     if cached:
         r.incr("metrics:hits")
         print("HIT")
+
+        print("GUARDANDO TIMESTAMP")
+        r.rpush(
+            "metrics:timestamps", # Metricas para throughput
+            time.time()
+        )
         continue
 
     else:
         r.incr("metrics:misses")
         print("MISS")
 
-        resultado = procesar_consulta(
-            consulta
+        resultado = procesar_consulta(consulta)
+
+        print("GUARDANDO TIMESTAMP")
+        r.rpush(
+            "metrics:timestamps", # Metricas para throughput
+            time.time()
         )
 
         r.set(
@@ -123,12 +133,40 @@ for msg in consumer:
     try: # Simular falla
         if random.random() < FAILURE_RATE:
             r.incr("metrics:failures") # Para las metricas
+
+            r.set( # Para recovery time
+                f"failure_start:{consulta['id']}",
+                time.time()
+            ) 
+
             raise Exception("Falla simulada")
 
         if consulta["retries"] > 0: # Indica que consulta se recupero despues de fallar
             r.incr("metrics:recoveries") # Para las metricas
 
+            start = r.get( # Para recovery time
+                f"failure_start:{consulta['id']}"
+            )
+            if start:
+                recovery_time = (
+                    time.time()
+                    - float(start)
+                )
+                r.rpush(
+                    "metrics:recovery_times",
+                    recovery_time
+                )
+                r.delete(
+                    f"failure_start:{consulta['id']}"
+                ) 
+
         resultado = procesar_consulta(consulta)
+
+        print("GUARDANDO TIMESTAMP")
+        r.rpush(
+            "metrics:timestamps", # Metricas para throughput
+            time.time()
+        )
 
     except Exception: # Hacer retry
         r.incr("metrics:retry_count") # Para las metricas

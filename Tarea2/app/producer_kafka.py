@@ -13,9 +13,7 @@ producer = KafkaProducer(
 
 for i in range(PROD_QUERY_QUANTITY):
     consulta = generate_query() # Generar consulta
-
     print(consulta)
-    # Testeo
 
     producer.send(
         "consultas",

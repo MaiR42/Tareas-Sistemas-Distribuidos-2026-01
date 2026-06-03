@@ -1,6 +1,9 @@
 import numpy as np
 import random
 
+import uuid # Tarea 2
+import time # Tarea 2
+
 
 # Trafico Zipf 
 # => Unas zonas mas frecuentes que otras
@@ -29,6 +32,7 @@ def generate_uniform_queries(n=1):
     return queries
 
 
+
 # Para el Redis
 def generate_query(distribution="zipf"): #distribution: "zipf" o "uniform"
     
@@ -41,6 +45,10 @@ def generate_query(distribution="zipf"): #distribution: "zipf" o "uniform"
 
     tipo = random.choice(tipos)
     consulta = {
+        "id": str(uuid.uuid4()), # id unico
+        "created_at": time.time(), # Para el timestamp
+        "retries": 0, # Cantidad de reintentos, default en 0
+
         "tipo": tipo,
         "zona": zona
     }

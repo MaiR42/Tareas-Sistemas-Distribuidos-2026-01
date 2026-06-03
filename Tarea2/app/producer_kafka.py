@@ -2,7 +2,7 @@
 from kafka import KafkaProducer
 import json
 
-from config import PROD_QUERY_QUANTITY
+from config import PROD_QUERY_QUANTITY, DEBUG
 from traffic_gen import *
 
 # Config del producer
@@ -13,13 +13,12 @@ producer = KafkaProducer(
 
 for i in range(PROD_QUERY_QUANTITY):
     consulta = generate_query() # Generar consulta
-    print(consulta)
+    print(consulta) if DEBUG else 0
 
     producer.send(
         "consultas",
         consulta
     )
 
-    producer.flush()
-
-    print("Mensaje enviado")
+producer.flush()
+print(f"Se enviaron {PROD_QUERY_QUANTITY} mensajes al consumer...")

@@ -1,12 +1,12 @@
 # Kafka consumer
-from kafka import KafkaConsumer
-from kafka import KafkaProducer
-
 import json
+import random
+import socket
+import os
+import time
+
 
 from queries import *
-
-import random
 from config import FAILURE_RATE, MAX_RETRIES
 
 import redis
@@ -18,6 +18,7 @@ r = redis.Redis(
 
 
 # Config del consumer
+from kafka import KafkaConsumer
 consumer = KafkaConsumer(
     "consultas",
     "consultas_retry",
@@ -32,6 +33,7 @@ consumer = KafkaConsumer(
     group_id="grupo1"
 )
 
+from kafka import KafkaProducer
 producer = KafkaProducer(
     bootstrap_servers="kafka:9092",
     value_serializer=lambda v: json.dumps(v).encode("utf-8")
@@ -73,12 +75,26 @@ def procesar_consulta(c):
         return None
 
 # Testeo
+print("iniciado el consumer:", socket.gethostname())
+print("PID:", os.getpid())
 print("Esperando mensajes...")
+
+
 
 for msg in consumer:
     #print("TOPIC:", msg.topic)
     #print("VALUE:", msg.value)
     consulta = msg.value
+
+    queue_delay = (time.time() - consulta["created_at"]) # Para las metricas
+    r.rpush("metrics:queue_delay", queue_delay)
+
+    print(
+        "Consumer:",
+        socket.gethostname(),
+        "Partition:",
+        msg.partition
+    )
 
     cache_key = json.dumps(
         consulta,

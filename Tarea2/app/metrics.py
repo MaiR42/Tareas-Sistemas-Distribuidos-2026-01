@@ -73,7 +73,7 @@ print("========================================")
 print("Metricas Sistema de Recuperacion (Tarea 2)")
 print("========================================")
 
-print("Distribucion de consultas", GEN_TRAFIC_DISTR)
+print("Distribucion de consultas: ", GEN_TRAFIC_DISTR)
 print("TTL: ", TTL)
 print("FAILURE_RATE (Prob. de fallo): ", FAILURE_RATE*100, "%")
 print("Cantidad max. de retries: ", MAX_RETRIES)

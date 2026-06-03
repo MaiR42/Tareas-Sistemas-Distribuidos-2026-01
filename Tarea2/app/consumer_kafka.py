@@ -82,8 +82,8 @@ print("Esperando mensajes...")
 
 for msg in consumer:
     consulta = msg.value
-
     is_retry = msg.topic == "consultas_retry"
+    print(f"TOPIC: {msg.topic} | is_retry: {is_retry} | retries: {consulta['retries']}")
 
     queue_delay = (time.time() - consulta["created_at"]) # Para las metricas
     r.rpush("metrics:queue_delay", queue_delay)

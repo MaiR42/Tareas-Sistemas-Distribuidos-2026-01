@@ -2,10 +2,13 @@
 # Politica de remocion, espacio de memoria cache y TRAFFIC_INTERVAL sigue en el docker-compose.yml
 
 # T1
-TTL = 60 # engine.py
+TTL = 10
 GEN_TRAFIC_DISTR = "zipf" # "zipf" o "uniform" # main.py
 
 # T2
-MAX_RETRIES = 3 # retry_manager.py # Despues
-FAILURE_RATE = 0.7 # Simular fallas # consumer_kafka.py
-PROD_QUERY_QUANTITY = 100 # Cantidad de queries que manda un producer
+
+DEBUG = False # Para mostrar los prints principalmente
+
+MAX_RETRIES = 2 # consumer_fakfa.py
+FAILURE_RATE = 0.7 # Prob. de simular fallas en misses # consumer_kafka.py
+PROD_QUERY_QUANTITY = 10000 # Cantidad de queries que manda un producer # producer_kafka.py

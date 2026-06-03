@@ -3,6 +3,8 @@
 import redis
 import numpy as np
 
+from config import *
+
 r = redis.Redis(host="cache", port=6379, decode_responses=True)
 
 # Metricas Tarea 1
@@ -70,6 +72,11 @@ print("Throughput (req/s):", throughput)
 print("========================================")
 print("Metricas Sistema de Recuperacion (Tarea 2)")
 print("========================================")
+
+print("Distribucion de consultas", GEN_TRAFIC_DISTR)
+print("TTL: ", TTL)
+print("FAILURE_RATE (Prob. de fallo): ", FAILURE_RATE*100, "%")
+print("Cantidad max. de retries: ", MAX_RETRIES)
 
 print("Retries:", retry_count)
 print("DLQ:", dlq_count)

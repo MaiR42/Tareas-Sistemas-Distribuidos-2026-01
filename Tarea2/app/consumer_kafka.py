@@ -96,6 +96,15 @@ for msg in consumer:
     else:
         cache_key = f"query:{consulta['tipo']}:{consulta['zona']}:{consulta['confidence_min']}" # Default para Q1, Q2, Q3
 
+    if is_retry and consulta["retries"] > 0:
+        r.incr("metrics:recoveries")
+        print("RECOVERY")
+        start = r.get(f"failure_start:{consulta['id']}")
+        if start:
+            recovery_time = time.time() - float(start)
+            r.rpush("metrics:recovery_times", recovery_time)
+            r.delete(f"failure_start:{consulta['id']}")
+
     cached = r.get(cache_key)
     if cached and not is_retry:
         r.incr("metrics:hits")

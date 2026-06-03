@@ -7,4 +7,4 @@ GEN_TRAFIC_DISTR = "zipf" # "zipf" o "uniform" # main.py
 
 # T2
 MAX_RETRIES = 3 # retry_manager.py # Despues
-
+FAILURE_RATE = 0.9 # Simular fallas # consumer_kafka.py
